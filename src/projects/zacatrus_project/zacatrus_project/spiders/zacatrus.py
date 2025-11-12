@@ -1,0 +1,28 @@
+import scrapy
+from ..items import ZacatrusItem
+
+class ZacatrusSpider(scrapy.Spider):
+    name = "zacatrus"
+    allowed_domains = ["zacatrus.es"]
+    start_urls = [f"https://zacatrus.es/juegos-de-mesa.html?p={i}" for i in range(1, 15)]
+
+    custom_settings = {
+        'FEEDS': {
+            'data/zacatrus.csv': {
+                'format': 'csv',
+                'encoding': 'utf8',
+                'overwrite': True
+            }
+        },
+        
+    }
+
+    def parse(self, response):
+        
+        for juego in response.css('div.product-item-info'):
+            item = ZacatrusItem()
+            item['nombre'] = juego.xpath('.//strong[@class="product name product-item-name"]/a/text()').get()
+            item['precio'] = juego.css('span.price::text').get()
+            item['link'] = juego.css('a::attr(href)').get()
+            item['imagen'] = juego.css('img::attr(src)').get()
+            yield item

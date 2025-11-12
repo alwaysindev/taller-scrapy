@@ -1,0 +1,59 @@
+import scrapy
+from scrapy_playwright.page import PageMethod
+from ..items import HAItem  # Asegúrate de que tu item HAItem está bien definido
+
+class HousinganywhereSpider(scrapy.Spider):
+    name = "housinganywhere"
+    allowed_domains = ["housinganywhere.com"]
+
+    # Genera URLs de paginación (ajusta el rango según necesites)
+    start_urls = [f'https://housinganywhere.com/es/s/Barcelona--Espa%C3%B1a?page={i}' for i in range(1, 20)]
+    
+    custom_settings = {
+        'FEEDS': {
+            'data/housinganywhere.csv': {
+                'format': 'csv',
+                'encoding': 'utf8',
+                'overwrite': True
+            }
+        }
+    }
+
+    def start_requests(self):
+        for url in self.start_urls:
+            yield scrapy.Request(
+                url,
+                meta={
+                    "playwright": True,
+                    # Aumentamos los tiempos de espera para que se cargue el contenido dinámico
+                    "playwright_page_methods": [
+                        PageMethod("wait_for_selector", "a.css-1efwqj7-cardLink"),  # Espera 2 segundos
+                        PageMethod("evaluate", "window.scrollBy(0, window.innerHeight)"),
+                        # PageMethod("wait_for_timeout", 5000),
+                        PageMethod("evaluate", "window.scrollBy(0, window.innerHeight)"),
+                        PageMethod("wait_for_timeout", 300),
+                        PageMethod("evaluate", "window.scrollBy(0, window.innerHeight)"),
+                        PageMethod("wait_for_timeout", 200),
+                        PageMethod("evaluate", "window.scrollBy(0, window.innerHeight)"),
+                        PageMethod("wait_for_timeout", 500),
+                        PageMethod("evaluate", "window.scrollBy(0, window.innerHeight)"),
+                        # PageMethod("evaluate", "window.scrollTo(0, document.body.scrollHeight)"),
+                        PageMethod("wait_for_timeout", 3000),
+                    ]
+                },
+                callback=self.parse
+            )
+
+    def parse(self, response):
+        # Extrae enlaces usando el selector CSS (verifica en la web que el selector es correcto)
+        links = response.css("a.css-1efwqj7-cardLink::attr(href)").getall()
+        self.log(f"Encontrados {len(links)} enlaces en {response.url}")
+
+        for link in links:
+            item = HAItem()
+            item["url_actual"] = response.url
+            # Genera URL absoluta y elimina parámetros si existen
+            item["url_inmueble"] = response.urljoin(link).split('?')[0]
+            yield item
+
+

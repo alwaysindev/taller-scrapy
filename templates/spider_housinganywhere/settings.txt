@@ -1,3 +1,8 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Scrapy settings for housinganywhere_project project
 #
 # For simplicity, this file contains only settings considered important or
@@ -12,11 +17,18 @@ BOT_NAME = "housinganywhere_project"
 SPIDER_MODULES = ["housinganywhere_project.spiders"]
 NEWSPIDER_MODULE = "housinganywhere_project.spiders"
 
+SCRAPEOPS_API_KEY = os.getenv("SCRAPEOPS_API_KEY")
+SCRAPEOPS_FAKE_USER_AGENT_ENDPOINT = 'https://headers.scrapeops.io/v1/user-agents'
+SCRAPEOPS_FAKE_USER_AGENT_ENABLED = True
+SCRAPEOPS_NUM_RESULTS = 50
+
+LOG_LEVEL = "INFO"
+
 
 # User agent y configuración básica
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
 ROBOTSTXT_OBEY = False
-CONCURRENT_REQUESTS = 6
+CONCURRENT_REQUESTS = 4
 # CONCURRENT_REQUESTS_PER_DOMAIN = 12
 
 ##############################################
@@ -30,16 +42,12 @@ DOWNLOAD_HANDLERS = {
     "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
 }
 
-DOWNLOADER_MIDDLEWARES = {
-    "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 810,
-}
-
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 
 # Configuración de Playwright
 PLAYWRIGHT_BROWSER_TYPE = "chromium"
 # Máximo de contextos (browsers) simultáneos
-PLAYWRIGHT_MAX_CONTEXTS = 6
+# PLAYWRIGHT_MAX_CONTEXTS = 6
 
 # Máximo de páginas (tabs) por contexto
 PLAYWRIGHT_MAX_PAGES_PER_CONTEXT = 4
@@ -83,15 +91,25 @@ FEED_EXPORT_ENCODING = "utf-8"
 
 # Enable or disable spider middlewares
 # See https://docs.scrapy.org/en/latest/topics/spider-middleware.html
-#SPIDER_MIDDLEWARES = {
+SPIDER_MIDDLEWARES = {
 #    "housinganywhere_project.middlewares.HousinganywhereProjectSpiderMiddleware": 543,
-#}
+#    "housinganywhere_project.middlewares.ScrapeOpsFakeBrowserHeaderAgentMiddleware": 400,
+}
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    "housinganywhere_project.middlewares.HousinganywhereProjectDownloaderMiddleware": 543,
-#}
+DOWNLOADER_MIDDLEWARES = {
+    # Desactiva el middleware de User-Agent por defecto de Scrapy
+    "scrapy.downloadermiddlewares.useragent.UserAgentMiddleware": None,
+
+    # Tus middlewares personalizados (AJUSTA PRIORIDADES SI QUIERES)
+    "housinganywhere_project.middlewares.ScrapeOpsFakeUserAgentMiddleware": 400,
+    # "housinganywhere_project.middlewares.ScrapeOpsFakeBrowserHeaderAgentMiddleware": 410,
+
+    # El de compresión lo dejas como lo tenías
+    "scrapy.downloadermiddlewares.httpcompression.HttpCompressionMiddleware": 810,
+}
+ #es una extensión (middleware de descarga)
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
@@ -101,9 +119,9 @@ FEED_EXPORT_ENCODING = "utf-8"
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    "housinganywhere_project.pipelines.HousinganywhereProjectPipeline": 300,
-#}
+ITEM_PIPELINES = {
+   "housinganywhere_project.pipelines.HousinganywhereProjectPipeline": 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://docs.scrapy.org/en/latest/topics/autothrottle.html

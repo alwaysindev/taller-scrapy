@@ -62,7 +62,7 @@ class HousinganywhereSpider(scrapy.Spider):
             # Título usando regex, pero ahora RELATIVO al <a>
             item["title"] = link.xpath(
                 ".//span[re:test(@data-test-locator, 'Listing.*Card.*Title', 'i')]/text()"
-            ).get() #La i en tu expresión XPath corresponde a "case-insensitive" (insensible a mayúsculas/minúsculas).
+            ).get()
 
             # Precio: puedes hacerlo con contains o también con regex, como prefieras
             item["price"] = link.xpath(
